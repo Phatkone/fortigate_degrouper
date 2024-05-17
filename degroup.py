@@ -153,6 +153,10 @@ def main(host: str, apikey: str, vdom: str = 'root', port: int = 443, verbose: b
                     edit_list[id]['svc_rm'] = [i]
         if not bool(edit_list[id]):
             edit_list.pop(id)
+    
+    if not bool(edit_list):
+        print("No Policies found with Service or Address groups.")
+        exit()
 
     for id, pol in edit_list.items():
         r = api_get(s, base_url + 'firewall/policy/{}?vdom={}'.format(id, vdom))
@@ -179,69 +183,103 @@ def main(host: str, apikey: str, vdom: str = 'root', port: int = 443, verbose: b
         if 'svc' in pol.keys():
             pol['svc'] = list(dict.fromkeys(pol['svc']))
 
-        print("Policy ID: {} has the following changes: {}".format(id, json.dumps(pol, indent=2)))
-        
+        changes = {}
         if 'src' in pol.keys():
+            changes['src'] = []
+            changes['src_rm'] = []
             pol['src'] += pols[id]['src']
             for i in pol['src_rm']:
+                changes['src_rm'].append(i)
                 pol['src'].remove(i)
             p_src = []
             for src in pol['src']:
+                changes['src'].append(src)
                 p_src.append({
                     "name": src,
                     "q_origin_key": src
                 })
         if 'dst' in pol.keys():
+            changes['dst'] = []
+            changes['dst_rm'] = []
             pol['dst'] += pols[id]['dst']
             for i in pol['dst_rm']:
+                changes['dst_rm'].append(i)
                 pol['dst'].remove(i)
             p_dst = []
             for dst in pol['dst']:
+                changes['dst'].append(dst)
                 p_dst.append({
                     "name": dst,
                     "q_origin_key": dst
                 })
         if 'src6' in pol.keys():
+            changes['src6'] = []
+            changes['src6_rm'] = []
             pol['src6'] += pols[id]['src6']
             for i in pol['src6_rm']:
+                changes['src6_rm'].append(i)
                 pol['src6'].remove(i)
             p_src6 = []
             for src6 in pol['src6']:
+                changes['src6'].append(src6)
                 p_src6.append({
                     "name": src6,
                     "q_origin_key": src6
                 })
         if 'dst6' in pol.keys():
+            changes['dst6'] = []
+            changes['dst6_rm'] = []
             pol['dst6'] += pols[id]['dst6']
             for i in pol['dst6_rm']:
+                changes['dst6_rm'].append(i)
                 pol['dst6'].remove(i)
             p_dst6 = []
             for dst6 in pol['dst6']:
+                changes['dst6'].append(dst6)
                 p_dst6.append({
                     "name": dst6,
                     "q_origin_key": dst6
                 })
         if 'svc' in pol.keys():
+            changes['svc'] = []
+            changes['svc_rm'] = []
             pol['svc'] += pols[id]['svc']
             for i in pol['svc_rm']:
+                changes['svc_rm'].append(i)
                 pol['svc'].remove(i)
             p_svc = []
             for svc in pol['svc']:
+                changes['svc'].append(svc)
                 p_svc.append({
                     "name": svc,
                     "q_origin_key": svc
                 })
         
+        print("\n\nPolicy {},  ID: {} has the following changes: ".format(p['name'], id))
+        if 'src' in changes.keys():
+            print("Source IPv4 from: \n {} \nto \n {} \nRemoving Group(s): {}\n".format(", ".join(pols[id]['src']), ", ".join(changes['src']), ", ".join(changes['src_rm'])))
+        if 'src6' in changes.keys():
+            print("Source IPv6 from: \n {} \nto \n {} \nRemoving Group(s): {}\n".format(", ".join(pols[id]['src6']), ", ".join(changes['src6']), ", ".join(changes['src6_rm'])))
+        if 'dst' in changes.keys():
+            print("Destination IPv4 from: \n {} \nto \n {} \nRemoving Group(s): {}\n".format(", ".join(pols[id]['dst']), ", ".join(changes['dst']), ", ".join(changes['dst_rm'])))
+        if 'dst6' in changes.keys():
+            print("Destination IPv6 from: \n {} \nto \n {} \nRemoving Group(s): {}\n".format(", ".join(pols[id]['dst6']), ", ".join(changes['dst6']), ", ".join(changes['dst6_rm'])))
+        if 'svc' in changes.keys():
+            print("Service from: \n {} \nto \n {} \nRemoving Group(s): {}\n".format(", ".join(pols[id]['svc']), ", ".join(changes['svc']), ", ".join(changes['svc_rm'])))
+
+
         p['srcaddr'] = p_src
         p['srcaddr6'] = p_src6
         p['dstaddr'] = p_dst
         p['dstaddr6'] = p_dst6
         p['service'] = p_svc
         r['results'][0] = p
-        if input("Update policy: {}? (y/n)".format(p['name'])).lower() == 'y':
+        if input("\nUpdate policy: {}? (y/n)  ".format(p['name'])).lower() == 'y':
             r = s.put(base_url + "firewall/policy/{}?vdom={}&policyid={}".format(id, vdom, id), data=json.dumps([p]))
             if r.status_code == 200:
-                print("Successfully updated policy {}: {}".format(id, p['name']))
+                print("Successfully updated policy {}: {}\n\n".format(id, p['name']))
+        else:
+            print("Skipping {}\n\n".format(p['name']))
 
 
 if __name__ == "__main__":
