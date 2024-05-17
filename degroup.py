@@ -242,7 +242,6 @@ def main(host: str, apikey: str, vdom: str = 'root', port: int = 443, verbose: b
             r = s.put(base_url + "firewall/policy/{}?vdom={}&policyid={}".format(id, vdom, id), data=json.dumps([p]))
             if r.status_code == 200:
                 print("Successfully updated policy {}: {}".format(id, p['name']))
-            #print(r.status_code, r.text)
 
 
 if __name__ == "__main__":
