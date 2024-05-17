@@ -4,7 +4,7 @@ Description: Bulk update tool for Fortigates to expand address and service group
 Dependencies: requests, urllib3, argparse, json
 Usage: `python3 degroup.py` or `python3 degroup.py -fw <host ip or fqdn> -p <host mgmt port> -k <api key> `
  All inputs required are in prompt format within the script.
-
+Version: 1.0
 DISCLAIMER: By using this tool, the user accepts all liability for the results 
 and agree that the creator accepts no liability for any unintended outcomes or interruptions to systems
  
