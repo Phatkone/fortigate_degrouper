@@ -1,9 +1,10 @@
 # Fortigate De-Grouper
 ## Description
-Expands Address, Address6 and Service groups into individual objects for firewall policies
+Expands Address, Address6 and Service groups into individual objects for firewall policies  
+Great for cleaning up poorly named groups converted from other systems such as ASAs  
 
 ## Usage
-`python degroup.py -fw <host> -p <port> -k <apikey>`
+`python degroup.py -fw <host> -p <port> -k <apikey> -vd <vdom>`
 
 
 ## Dependancies
