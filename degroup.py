@@ -2,9 +2,9 @@
 Author: Phatkone
 Description: Bulk update tool for Fortigates to expand address and service groups into policies.
 Dependencies: requests, urllib3, argparse, json
-Usage: `python3 degroup.py` or `python3 degroup.py -fw <host ip or fqdn> -p <host mgmt port> -k <api key> `
+Usage: `python3 degroup.py` or `python3 degroup.py -fw <host ip or fqdn> -p <host mgmt port> -k <api key> -vd <vdom>`
  All inputs required are in prompt format within the script.
-Version: 1.0
+Version: 1.1
 DISCLAIMER: By using this tool, the user accepts all liability for the results 
 and agree that the creator accepts no liability for any unintended outcomes or interruptions to systems
  
@@ -79,7 +79,7 @@ def parse_policies(in_dict: dict) -> dict:
             }
     return out_dict
 
-def main(host: str, apikey: str, port: int = 443, verbose: bool = False, verify: bool = True, *args, **kwargs):
+def main(host: str, apikey: str, vdom: str = 'root', port: int = 443, verbose: bool = False, verify: bool = True, *args, **kwargs):
     if not verify:
         urllib3.disable_warnings()
     headers = {
@@ -88,10 +88,10 @@ def main(host: str, apikey: str, port: int = 443, verbose: bool = False, verify:
     }
     s = session_init(headers, verify)
     base_url = 'https://{}:{}/api/v2/cmdb/'.format(host, port)
-    svc_groups = api_get(s, base_url + 'firewall.service/group')
-    addr_groups = api_get(s, base_url + 'firewall/addrgrp')
-    addr6_groups = api_get(s, base_url + 'firewall/addrgrp6')
-    policies = api_get(s, base_url + 'firewall/policy')
+    svc_groups = api_get(s, base_url + 'firewall.service/group?vdom={}'.format(vdom))
+    addr_groups = api_get(s, base_url + 'firewall/addrgrp?vdom={}'.format(vdom))
+    addr6_groups = api_get(s, base_url + 'firewall/addrgrp6?vdom={}'.format(vdom))
+    policies = api_get(s, base_url + 'firewall/policy?vdom={}'.format(vdom))
     svc_grps = get_members(svc_groups) if 'results' in svc_groups.keys() and svc_groups['size'] > 0 else {}
     addr_grps = get_members(addr_groups) if 'results' in addr_groups.keys() and addr_groups['size'] > 0 else {}
     addr6_grps = get_members(addr6_groups) if 'results' in addr6_groups.keys() and addr6_groups['size'] > 0 else {}
@@ -155,11 +155,10 @@ def main(host: str, apikey: str, port: int = 443, verbose: bool = False, verify:
             edit_list.pop(id)
 
     for id, pol in edit_list.items():
-        r = api_get(s, base_url + 'firewall/policy/{}'.format(id))
+        r = api_get(s, base_url + 'firewall/policy/{}?vdom={}'.format(id, vdom))
         if not 'results' in r.keys():
             print("Unable to pull existing policy. Skipping.")
             continue
-        vdom = r['vdom'] if 'vdom' in r.keys() else ""
         
         p = r['results'][0]
         p_src = p['srcaddr']
@@ -254,6 +253,7 @@ if __name__ == "__main__":
         parser.add_argument('-fw', '--host', type=str, metavar="HOST", help="Fortigate IP / Hostname")
         parser.add_argument('-p', '--port', type=int, help="Port for management interface, defaults to 443 if not defined")
         parser.add_argument('-k', '--key', type=str, help="API Key for firewall connection. Note: Must have read permissions on firewall objects and read/write for firewall policies")
+        parser.add_argument('-vd', '--vdom', type=str, help="VDOM to modify, defaults to root if not defined")
         args = parser.parse_args()
         # verbose = args.verbose
         verbose = False
@@ -261,7 +261,8 @@ if __name__ == "__main__":
         port = args.port if args.port else 443 
         host = args.host if args.host is not None else input("What is the IP or FQDN of the Fortigate? \n> ")
         key = args.key if args.key is not None else input("What is the API Key? \n> ")
+        vdom = args.vdom if args.vdom else 'root'
         
-        main(**{'host': host, 'apikey': key, 'verbose': verbose, 'verify': verify, 'port': port})
+        main(**{'host': host, 'apikey': key, 'vdom': vdom, 'verbose': verbose, 'verify': verify, 'port': port})
     except KeyboardInterrupt:
         print("Stopped by Keyboard Interrupt")
