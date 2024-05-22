@@ -15,7 +15,7 @@ GNU GPL License applies.
 -------ooO-(_)-Ooo-------
 
 """
-import urllib3, argparse
+import urllib3, argparse, re
 from requests import session
 from json import dumps
 
@@ -37,10 +37,11 @@ def get_members(in_dict: dict) -> dict:
         return out_dict
     for r in in_dict['results']:
         gname = r['name']
-        members = []
-        for m in r['member']:
-            members.append(m['name'])
-        out_dict[gname] = members
+        if re.match(r'.+DM_INLINE.+', gname):
+            members = []
+            for m in r['member']:
+                members.append(m['name'])
+            out_dict[gname] = members
     return out_dict
 
 def parse_policies(in_dict: dict) -> dict:
